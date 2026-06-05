@@ -66,7 +66,7 @@ class MazeSimulator:
         map_lines: list[str],
         controller_a: DroneController,
         controller_b: DroneController,
-        initial_battery: int = 120,
+        initial_battery: int = 30,
         time_limit: int = 300,
     ) -> None:
         self.grid = [list(row) for row in map_lines] # turns each string row into a list of characters, becomes list of list of chars

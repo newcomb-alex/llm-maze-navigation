@@ -1,6 +1,7 @@
+# src/controllers/base.py
 from typing import Protocol
 
-from types import ActionCommand, Observation
+from src.types import ActionCommand, Observation
 
 
 # ---------- Controller interface ----------

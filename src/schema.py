@@ -1,3 +1,8 @@
+# src/schema.py
+from __future__ import annotations
+
+from jsonschema import Draft202012Validator
+
 OBSERVATION_JSON_SCHEMA = {
     "type": "object",
     "required": [
@@ -84,3 +89,21 @@ ACTION_JSON_SCHEMA = {
     },
     "additionalProperties": False,
 }
+
+_OBS_VALIDATOR = Draft202012Validator(OBSERVATION_JSON_SCHEMA)
+_ACT_VALIDATOR = Draft202012Validator(ACTION_JSON_SCHEMA)
+
+def _format_errors(errors) -> list[str]:
+    out: list[str] = []
+    for e in sorted(errors, key=lambda x: list(x.path)):
+        path = ".".join(str(p) for p in e.path) or "<root>"
+        out.append(f"{path}: {e.message}")
+    return out
+
+
+def validate_observation_dict(data: dict) -> list[str]:
+    return _format_errors(_OBS_VALIDATOR.iter_errors(data))
+
+
+def validate_action_dict(data: dict) -> list[str]:
+    return _format_errors(_ACT_VALIDATOR.iter_errors(data))

@@ -1,4 +1,4 @@
-#!/usr/bin/env python3
+# scripts/run_single.py
 from __future__ import annotations
 
 import argparse
@@ -42,7 +42,7 @@ class BuiltinRandomController:
 def parse_args() -> argparse.Namespace:
     p = argparse.ArgumentParser(description="Run one maze simulation.")
     p.add_argument("--map", dest="map_path", required=True, help="Path to map txt, e.g. maps/easy_01.txt")
-    p.add_argument("--battery", type=int, default=120, help="Initial battery for both drones")
+    p.add_argument("--battery", type=int, default=30, help="Initial battery for both drones")
     p.add_argument("--time-limit", type=int, default=300, help="Max timesteps")
     p.add_argument(
         "--controller-a",
