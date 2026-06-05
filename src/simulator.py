@@ -4,14 +4,7 @@ from dataclasses import dataclass, field
 from typing import Protocol
 
 from types import ActionCommand, ActionName, Observation
-
-
-# ---------- Controller interface ----------
-
-class DroneController(Protocol):
-    def decide(self, observation: Observation) -> ActionCommand:
-        ...
-
+from controllers.base import DroneController
 
 # ---------- Internal state ----------
 
