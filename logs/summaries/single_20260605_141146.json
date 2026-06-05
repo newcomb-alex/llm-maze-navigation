@@ -1,7 +1,0 @@
-{
-  "run_id": "single_20260605_141146",
-  "status": "failure",
-  "reason": "Goal reached out of order: touched 2 before 1.",
-  "steps": 7,
-  "next_goal": 1
-}

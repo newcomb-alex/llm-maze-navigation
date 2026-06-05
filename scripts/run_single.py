@@ -54,7 +54,7 @@ def parse_args() -> argparse.Namespace:
         default="builtin:random",
         help='Controller spec for drone B. builtin:random | builtin:wait | "module.path:ClassName"',
     )
-    p.add_argument("--seed", type=int, default=7, help="Random seed")
+    p.add_argument("--seed", type=int, default=None, help="Random seed (optional)")
     return p.parse_args()
 
 
@@ -105,33 +105,80 @@ def build_controller(spec: str):
     return cls()
 
 
-def write_outputs(run_id: str, result: Any) -> tuple[Path, Path]:
+def _format_local_view(local_view: list[list[str]]) -> str:
+    if not local_view:
+        return "      <empty>"
+    return "\n".join(f"      {' '.join(row)}" for row in local_view)
+
+
+def _format_drone_block(label: str, payload: dict) -> str:
+    obs = payload.get("observation", {})
+    act = payload.get("action", {})
+    st = payload.get("state", {})
+    feedback = obs.get("last_action_feedback")
+
+    lines: list[str] = [
+        f"{label}:",
+        "  1) Observation at start of step",
+        f"    position={obs.get('position')} battery={obs.get('battery')} "
+        f"incoming_message={obs.get('incoming_message')!r}",
+        f"    next_goal={obs.get('next_goal')} goals_found={obs.get('goals_found')} "
+        f"inspection_wait_remaining={obs.get('inspection_wait_remaining')}",
+        "    local_view:",
+        _format_local_view(obs.get("local_view", [])),
+        f"    Action feedback (from previous/action resolution context): ",
+        f"    {feedback}",
+        "  2) Decision",
+        f"    action={act.get('action')} message={act.get('message', '')!r}",
+        "  4) State at end of step",
+        f"    row={st.get('row')} col={st.get('col')} battery={st.get('battery')} "
+        f"inspection_wait_remaining={st.get('inspection_wait_remaining')}",
+    ]
+    return "\n".join(lines)
+
+
+def write_outputs(run_id: str, result: Any, seed: int) -> tuple[Path, Path, Path]:
     runs_dir = PROJECT_ROOT / "logs" / "runs"
     summaries_dir = PROJECT_ROOT / "logs" / "summaries"
     runs_dir.mkdir(parents=True, exist_ok=True)
     summaries_dir.mkdir(parents=True, exist_ok=True)
 
     jsonl_path = runs_dir / f"{run_id}.jsonl"
+    readable_log_path = runs_dir / f"{run_id}.readable.log"
     summary_path = summaries_dir / f"{run_id}.json"
 
+    # Machine-readable
     with jsonl_path.open("w", encoding="utf-8") as f:
         for step in result.log:
             f.write(json.dumps(step, ensure_ascii=False) + "\n")
 
+    # Human-readable
+    with readable_log_path.open("w", encoding="utf-8") as f:
+        for step in result.log:
+            f.write(
+                f"[t={step.get('timestep')}] status={step.get('status')} "
+                f"reason={step.get('reason', '')!r} next_goal={step.get('next_goal')}\n"
+            )
+            f.write(_format_drone_block("drone_A", step.get("drone_A", {})) + "\n")
+            f.write(_format_drone_block("drone_B", step.get("drone_B", {})) + "\n")
+            f.write("-" * 72 + "\n")
+
     summary = {
         "run_id": run_id,
+        "seed": seed,
         "status": result.status,
         "reason": result.reason,
         "steps": result.steps,
         "next_goal": result.next_goal,
     }
     summary_path.write_text(json.dumps(summary, indent=2), encoding="utf-8")
-    return jsonl_path, summary_path
+    return jsonl_path, readable_log_path, summary_path
 
 
 def main() -> None:
     args = parse_args()
-    random.seed(args.seed)
+    used_seed = args.seed if args.seed is not None else random.SystemRandom().randrange(0, 2**32)
+    random.seed(used_seed)
 
     map_path = PROJECT_ROOT / args.map_path
     map_lines = load_map_lines(map_path)
@@ -149,14 +196,15 @@ def main() -> None:
     result = sim.run()
 
     run_id = datetime.now().strftime("single_%Y%m%d_%H%M%S")
-    jsonl_path, summary_path = write_outputs(run_id, result)
+    jsonl_path, readable_log_path, summary_path = write_outputs(run_id, result, used_seed)
 
     print(f"Run ID: {run_id}")
     print(f"Status: {result.status}")
     print(f"Reason: {result.reason}")
     print(f"Steps: {result.steps}")
     print(f"Next goal: {result.next_goal}")
-    print(f"Step log: {jsonl_path}")
+    print(f"Step log (jsonl): {jsonl_path}")
+    print(f"Step log (readable): {readable_log_path}")
     print(f"Summary: {summary_path}")
 
 
