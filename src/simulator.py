@@ -3,8 +3,8 @@ from __future__ import annotations
 from dataclasses import dataclass, field
 from typing import Protocol
 
-from types import ActionCommand, ActionName, Observation
-from controllers.base import DroneController
+from src.types import ActionCommand, ActionName, Observation
+from src.controllers.base import DroneController
 
 # ---------- Internal state ----------
 
