@@ -58,7 +58,7 @@ class SafeLLMController(DroneController):
             "Return ONLY JSON with keys action,message.\n"
             f"Observation:\n{json.dumps(obs_dict, ensure_ascii=False)}"
         )
-        # Adapt to your OpenRouter client
+        # Adapt to the OpenRouter client
         resp = self.llm_client.chat(model=self.model, prompt=prompt)
         return resp
 
