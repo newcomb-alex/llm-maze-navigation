@@ -136,8 +136,65 @@ def _format_drone_block(label: str, payload: dict) -> str:
     ]
     return "\n".join(lines)
 
+def _build_base_grid(map_lines: list[str]) -> list[list[str]]:
+    """
+    Reconstruct the static terrain grid the way MazeSimulator does:
+    parse the map and replace the 'A'/'B' start markers with empty cells '-'.
+    Walls, goals, restricted ('X'), and wind ('W') cells are preserved.
+    """
+    grid = [list(row) for row in map_lines]
+    for r, row in enumerate(grid):
+        for c, val in enumerate(row):
+            if val in ("A", "B"):
+                grid[r][c] = "-"
+    return grid
 
-def write_outputs(run_id: str, result: Any, seed: int) -> tuple[Path, Path, Path]:
+
+def _render_maze_ascii(base_grid: list[list[str]], step: dict) -> str:
+    """
+    Render the full maze for a single timestep as ASCII.
+
+    The base_grid supplies static terrain (walls/goals/zones); the drones'
+    end-of-step positions are read from the log step and overlaid as 'A'/'B'
+    (or '*' if they share a cell, e.g. on a collision step).
+    """
+    if not base_grid:
+        return "    <empty maze>"
+
+    rows = len(base_grid)
+    cols = len(base_grid[0])
+
+    a_state = step.get("drone_A", {}).get("state", {})
+    b_state = step.get("drone_B", {}).get("state", {})
+    a_pos = (a_state.get("row"), a_state.get("col"))
+    b_pos = (b_state.get("row"), b_state.get("col"))
+
+    # Build an overlay copy so we never mutate the static base grid.
+    overlay = [row[:] for row in base_grid]
+    if a_pos == b_pos and None not in a_pos:
+        r, c = a_pos
+        overlay[r][c] = "*"  # both drones share a cell (e.g. collision)
+    else:
+        if None not in a_pos:
+            overlay[a_pos[0]][a_pos[1]] = "A"
+        if None not in b_pos:
+            overlay[b_pos[0]][b_pos[1]] = "B"
+
+    # Column header (0-indexed to match simulator coordinates).
+    col_header = "        " + " ".join(f"{c:>2}" for c in range(cols))
+    lines = [
+        "  Maze state (end of step):",
+        "    Legend: A/B=drones  *=both(collision)  #=wall  -=empty  "
+        "X=restricted  W=wind  digit=goal",
+        col_header,
+    ]
+    for r in range(rows):
+        cells = " ".join(f"{overlay[r][c]:>2}" for c in range(cols))
+        lines.append(f"    r{r:>2} {cells}")
+    return "\n".join(lines)
+
+
+def write_outputs(run_id: str, result: Any, seed: int, map_lines: list[str]) -> tuple[Path, Path, Path]:
     runs_dir = PROJECT_ROOT / "logs" / "runs"
     summaries_dir = PROJECT_ROOT / "logs" / "summaries"
     runs_dir.mkdir(parents=True, exist_ok=True)
@@ -152,6 +209,9 @@ def write_outputs(run_id: str, result: Any, seed: int) -> tuple[Path, Path, Path
         for step in result.log:
             f.write(json.dumps(step, ensure_ascii=False) + "\n")
 
+    # Static terrain layer used to render the full maze each step.
+    base_grid = _build_base_grid(map_lines)
+
     # Human-readable
     with readable_log_path.open("w", encoding="utf-8") as f:
         for step in result.log:
@@ -161,6 +221,8 @@ def write_outputs(run_id: str, result: Any, seed: int) -> tuple[Path, Path, Path
             )
             f.write(_format_drone_block("drone_A", step.get("drone_A", {})) + "\n")
             f.write(_format_drone_block("drone_B", step.get("drone_B", {})) + "\n")
+            # Full maze state, shown at the END of the step after both drones' blocks.
+            f.write(_render_maze_ascii(base_grid, step) + "\n")
             f.write("-" * 72 + "\n")
 
     summary = {
@@ -196,7 +258,7 @@ def main() -> None:
     result = sim.run()
 
     run_id = datetime.now().strftime("single_%Y%m%d_%H%M%S")
-    jsonl_path, readable_log_path, summary_path = write_outputs(run_id, result, used_seed)
+    jsonl_path, readable_log_path, summary_path = write_outputs(run_id, result, used_seed, map_lines)
 
     print(f"Run ID: {run_id}")
     print(f"Status: {result.status}")

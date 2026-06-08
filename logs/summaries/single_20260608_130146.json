@@ -1,0 +1,8 @@
+{
+  "run_id": "single_20260608_130146",
+  "seed": 2167446072,
+  "status": "failure",
+  "reason": "Battery depleted.",
+  "steps": 23,
+  "next_goal": 1
+}
