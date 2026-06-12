@@ -247,6 +247,8 @@ class MazeSimulator:
             return True, ""
 
         goal_char = str(next_goal)
+        a_pos = (self.drone_a.row, self.drone_a.col)
+        b_pos = (self.drone_b.row, self.drone_b.col)
         a_cell = self._cell((self.drone_a.row, self.drone_a.col))
         b_cell = self._cell((self.drone_b.row, self.drone_b.col))
 
@@ -257,6 +259,10 @@ class MazeSimulator:
 
         # Correct next goal reached by either drone.
         if a_cell == goal_char or b_cell == goal_char:
+            if a_cell == goal_char:
+                self.grid[a_pos[0]][a_pos[1]] = "-"
+            if b_cell == goal_char:
+                self.grid[b_pos[0]][b_pos[1]] = "-"
             self.drone_a.goals_found.append(next_goal)
             self.drone_b.goals_found.append(next_goal)
             self.next_goal_idx += 1
