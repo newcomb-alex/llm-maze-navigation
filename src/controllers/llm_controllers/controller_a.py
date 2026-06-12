@@ -10,6 +10,8 @@ from src.controllers.llm_controllers.safe_llm_controller import (
     SafeLLMControllerConfig,
 )
 
+load_dotenv() # reads the .env file in the project root
+
 class OpenRouterClient:
     def __init__(self):
         self.api_key = os.getenv("OPENROUTER_API_KEY")

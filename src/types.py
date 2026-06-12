@@ -4,6 +4,8 @@ from __future__ import annotations
 from dataclasses import asdict, dataclass, field
 from typing import Literal, Optional, TypedDict
 
+import json
+
 ActionName = Literal[
     "MOVE_NORTH",
     "MOVE_SOUTH",
@@ -37,7 +39,7 @@ class Observation:
     inspection_wait_remaining: int = 0
 
     def to_dict(self) -> dict:
-        return asdict(self)
+        return json.loads(json.dumps(asdict(self)))
 
 
 @dataclass
