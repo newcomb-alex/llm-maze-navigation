@@ -40,8 +40,10 @@ class OpenRouterClient:
 
 
 #EDIT ME: write your prompt here
-SYSTEM_PROMPT = """You are a drone navigating a maze. Reply with ONLY JSON
-like {"action": "MOVE_NORTH", "message": ""}.
+SYSTEM_PROMPT = """You are a drone navigating a maze. 
+
+
+Reply with ONLY JSON like {"action": "MOVE_NORTH", "message": ""}.
 Valid actions: MOVE_NORTH, MOVE_SOUTH, MOVE_EAST, MOVE_WEST, SEND_MESSAGE, WAIT."""
 
 
