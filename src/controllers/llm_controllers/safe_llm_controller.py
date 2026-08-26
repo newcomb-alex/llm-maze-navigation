@@ -13,7 +13,7 @@ from src.schema import validate_observation_dict, validate_action_dict
 @dataclass
 class SafeLLMControllerConfig:
     strict_observation_validation: bool = True
-    max_message_chars: int = 160
+    max_message_chars: int = 300
 
 
 class SafeLLMController(DroneController):
