@@ -20,7 +20,7 @@ load_dotenv()  # reads the .env file in the project root
 class DroneMemory:
     """Memory policy: the last N actions taken + every message received from drone B."""
 
-    def __init__(self, max_moves: int = 5):
+    def __init__(self, max_moves: int = 10):
         self.moves: deque[str] = deque(maxlen=max_moves)
         self.messages: list[str] = []
 
